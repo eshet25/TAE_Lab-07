@@ -1389,10 +1389,10 @@ glimpse(pop_raw)
     ## $ State         <chr> "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "A…
     ## $ population    <dbl> 0, 55869, 223234, 24686, 22394, 57826, 10101, 19448, 113…
 
-The cases data has 3193 rows and 1269 columns. Each row represents one
-county or county-equivalent area in the United States, with identifying
-information like county name, state, and FIPS code, followed by
-cumulative COVID-19 case counts for many dates.
+That was a lot of text wheww! The cases data has 3193 rows and 1269
+columns. Each row represents one county or county-equivalent area in the
+United States, with identifying information like county name, state, and
+FIPS code, followed by cumulative COVID-19 case counts for many dates.
 
 The data is in wide format because each date is stored as its own
 column. As we learned before, I think this is a problem for plotting
@@ -1402,3 +1402,72 @@ have one column for `date` and one column for `cases`, so we need to
 reshape the data into long format before plotting (knowing this also
 helped me a lot while doing my plots for my eye tracking study as well
 :) ).
+
+### Exercise 4
+
+``` r
+# Keep only Kansas county rows and remove the statewide total row
+ks_cases <- cases_raw %>%
+  filter(State == "KS", countyFIPS != 0) %>%
+  pivot_longer(
+    cols = matches("^\\d{4}-\\d{2}-\\d{2}$"),
+    names_to = "date",
+    values_to = "cumulative_cases"
+  ) %>%
+  mutate(date = ymd(date)) %>%
+  select(countyFIPS, `County Name`, date, cumulative_cases)
+
+# Keep only Kansas county population data
+ks_pop <- pop_raw %>%
+  filter(State == "KS", countyFIPS != 0) %>%
+  select(countyFIPS, `County Name`, population)
+
+# Check results
+glimpse(ks_cases)
+```
+
+    ## Rows: 132,825
+    ## Columns: 4
+    ## $ countyFIPS       <dbl> 20001, 20001, 20001, 20001, 20001, 20001, 20001, 2000…
+    ## $ `County Name`    <chr> "Allen County", "Allen County", "Allen County", "Alle…
+    ## $ date             <date> 2020-01-22, 2020-01-23, 2020-01-24, 2020-01-25, 2020…
+    ## $ cumulative_cases <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
+
+``` r
+glimpse(ks_pop)
+```
+
+    ## Rows: 105
+    ## Columns: 3
+    ## $ countyFIPS    <dbl> 20001, 20003, 20005, 20007, 20009, 20011, 20013, 20015, …
+    ## $ `County Name` <chr> "Allen County", "Anderson County", "Atchison County", "B…
+    ## $ population    <dbl> 12369, 7858, 16073, 4427, 25779, 14534, 9564, 66911, 264…
+
+## Part 3: From Cumulative Counts to Daily Rates
+
+### Exercise 5
+
+``` r
+# Filter to the needed date range
+# Here, we start on July 5 because a 7-day rolling average beginning July 12
+# So, we restrict to July 5 and August 3.
+ks_daily <- ks_cases %>%
+  filter(date >= ymd("2020-07-05"), date <= ymd("2020-08-03")) %>%
+  group_by(countyFIPS, `County Name`) %>%
+  arrange(date, .by_group = TRUE) %>%
+  mutate(
+    daily_new_cases = cumulative_cases - lag(cumulative_cases)
+  ) %>%
+  ungroup() %>%
+  filter(!is.na(daily_new_cases))
+
+glimpse(ks_daily)
+```
+
+    ## Rows: 3,045
+    ## Columns: 5
+    ## $ countyFIPS       <dbl> 20001, 20001, 20001, 20001, 20001, 20001, 20001, 2000…
+    ## $ `County Name`    <chr> "Allen County", "Allen County", "Allen County", "Alle…
+    ## $ date             <date> 2020-07-06, 2020-07-07, 2020-07-08, 2020-07-09, 2020…
+    ## $ cumulative_cases <dbl> 5, 5, 5, 5, 6, 6, 6, 6, 6, 8, 8, 9, 9, 9, 10, 10, 11,…
+    ## $ daily_new_cases  <dbl> 1, 0, 0, 0, 1, 0, 0, 0, 0, 2, 0, 1, 0, 0, 1, 0, 1, 0,…

@@ -87,4 +87,51 @@ glimpse(ks_cases)
 glimpse(ks_pop)
 ```
 
+## Part 3: From Cumulative Counts to Daily Rates
+
+### Exercise 5
+
+```{r compute-daily-new-cases}
+# Filter to the needed date range
+# We restrict to July 5 and August 3.
+ks_daily <- ks_cases %>%
+  filter(date >= ymd("2020-07-05"), date <= ymd("2020-08-03")) %>%
+  group_by(countyFIPS, `County Name`) %>%
+  arrange(date, .by_group = TRUE) %>%
+  mutate(
+    daily_new_cases = cumulative_cases - lag(cumulative_cases)
+  ) %>%
+  ungroup() %>%
+  filter(!is.na(daily_new_cases))
+
+glimpse(ks_daily)
+```
+
+```{r add-mask-mandate-and-population}
+# Counties listed in the lab as having mask mandates
+mask_counties <- c(
+  "Allen", "Atchison", "Bourbon", "Crawford", "Dickinson",
+  "Douglas", "Franklin", "Geary", "Gove", "Harvey",
+  "Jewell", "Johnson", "Mitchell", "Montgomery", "Morris",
+  "Pratt", "Reno", "Republic", "Saline", "Scott",
+  "Sedgwick", "Shawnee", "Stanton", "Wyandotte"
+)
+
+# Add a clean county name and label each county by mask mandate status
+ks_daily_labeled <- ks_daily %>%
+  mutate(
+    county_clean = str_remove(`County Name`, " County"),
+    mask_mandate = if_else(county_clean %in% mask_counties, "Mask", "No Mask")
+  ) %>%
+  left_join(
+    ks_pop %>%
+      mutate(county_clean = str_remove(`County Name`, " County")) %>%
+      select(countyFIPS, population),
+    by = "countyFIPS"
+  )
+
+glimpse(ks_daily_labeled)
+
+```
+
 
