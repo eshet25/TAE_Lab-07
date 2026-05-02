@@ -35,3 +35,33 @@ Allen, Atchison, Bourbon, Crawford, Dickinson, Douglas, Franklin, Geary, Gove, H
 
 It also says the COVID-19 case data came from USAFacts, which provides county-level COVID-19 data. This is important because it lets us download the raw county-level case data and reconstruct the visualization ourselves.
 
+### Part 2: Acquiring the Raw Data
+
+### Exercise #3
+
+```{r Download the confirmed cases data and the county population data directly from USAFacts}
+library(tidyverse)
+library(scales)
+library(lubridate)
+cases_raw <- read_csv(
+  "https://static.usafacts.org/public/data/covid-19/covid_confirmed_usafacts.csv",
+  show_col_types = FALSE
+)
+
+pop_raw <- read_csv(
+  "https://static.usafacts.org/public/data/covid-19/covid_county_population_usafacts.csv",
+  show_col_types = FALSE
+)
+```
+
+```{r explore both datasets}
+glimpse(cases_raw)
+glimpse(pop_raw)
+```
+
+The cases data has `r nrow(cases_raw)` rows and `r ncol(cases_raw)` columns. Each row represents one county or county-equivalent area in the United States, with identifying information like county name, state, and FIPS code, followed by cumulative COVID-19 case counts for many dates.
+
+The data is in wide format because each date is stored as its own column. As we learned before, I think this is a problem for plotting with `ggplot2` because it works best when the variable that changes over time is stored in one column. For a time series graph, it is better to have one column for `date` and one column for `cases`, so we need to reshape the data into long format before plotting (knowing this also helped me a lot while doing my plots for my eye tracking study as well :) ).
+
+
+
