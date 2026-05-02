@@ -20,11 +20,18 @@ df <- read_csv("kansas_grouped_rolling_avg.csv")
 
 ### Exercise 1
 
-I think the original visualization appears to use data from **Kansas** during the summer of 2020. The title says it is showing the **Kansas COVID-19 7-day rolling average of daily cases per 100K population**. It compares two groups: **counties with mask mandates** and **counties without mask mandates**. The phrase “per 100K population” means the case counts were adjusted for population size, so counties or groups with different populations can be compared more fairly.
+I think the original visualization appears to use data from **Kansas** during the summer of 2020. The title says it is showing the **Kansas COVID-19 7-day rolling average of daily cases per 100K population**. 
+
+It compares two groups: **counties with mask mandates** and **counties without mask mandates**. I believe the phrase “per 100K population” means the case counts were adjusted for population size, so counties or groups with different populations can be compared more fairly.
 
 
 ### Exercise 2
 
-...
+I think the MMWR report gives two important details that were missing or not obvious in the original visualization.
 
-Add exercise headings as needed.
+It names the 24 Kansas counties that had mask mandates in effect by July 3, 2020. These were:
+
+Allen, Atchison, Bourbon, Crawford, Dickinson, Douglas, Franklin, Geary, Gove, Harvey, Jewell, Johnson, Mitchell, Montgomery, Morris, Pratt, Reno, Republic, Saline, Scott, Sedgwick, Shawnee, Stanton, and Wyandotte.
+
+It also says the COVID-19 case data came from USAFacts, which provides county-level COVID-19 data. This is important because it lets us download the raw county-level case data and reconstruct the visualization ourselves.
+
