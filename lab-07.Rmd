@@ -107,3 +107,183 @@ ks_daily <- ks_cases %>%
 glimpse(ks_daily)
 ```
 
+### Exercise 6 
+
+```{r add-mask-mandate-and-population}
+# Counties listed in the lab as having mask mandates
+mask_counties <- c(
+  "Allen", "Atchison", "Bourbon", "Crawford", "Dickinson",
+  "Douglas", "Franklin", "Geary", "Gove", "Harvey",
+  "Jewell", "Johnson", "Mitchell", "Montgomery", "Morris",
+  "Pratt", "Reno", "Republic", "Saline", "Scott",
+  "Sedgwick", "Shawnee", "Stanton", "Wyandotte"
+)
+
+# Add a clean county name and label each county by mask mandate status
+ks_daily_labeled <- ks_daily %>%
+  mutate(
+    county_clean = str_remove(`County Name`, " County"),
+    mask_mandate = if_else(county_clean %in% mask_counties, "Mask", "No Mask")
+  ) %>%
+  left_join(
+    ks_pop %>%
+      mutate(county_clean = str_remove(`County Name`, " County")) %>%
+      select(countyFIPS, population),
+    by = "countyFIPS"
+  )
+
+glimpse(ks_daily_labeled)
+
+```
+
+## Part 4: Computing the Rolling Average
+
+### Exercise 7
+
+```{r compute-rolling-average}
+library(tidyverse)
+library(scales)
+library(lubridate)
+library(zoo)
+# It wouldn't let me knit unless I loaded the packages in this chunk again for some reason. 
+# Now we aggregate by mask mandate group and date, then we can compute cases per 100K and the 7-day rolling average.
+cases_final <- ks_daily_labeled %>%
+  group_by(mask_mandate, date) %>%
+  summarize(
+    total_new = sum(daily_new_cases, na.rm = TRUE),
+    total_pop = sum(population, na.rm = TRUE),
+    .groups = "drop"
+  )
+# Then calculate daily cases per 100,000 people.
+cases_per100k <- cases_final %>%
+  mutate(
+    per_100k = (total_new / total_pop) * 100000
+  )
+
+#And now we can calculate the 7-day rolling average for each group.
+cases_grouped <- cases_per100k %>%
+  group_by(mask_mandate) %>%
+  arrange(date, .by_group = TRUE) %>%
+  mutate(
+    rolling_avg = zoo::rollmean(
+      per_100k,
+      k = 7,
+      fill = NA,
+      align = "right"
+    )
+  ) %>%
+  ungroup() %>%
+  filter(date >= ymd("2020-07-12")) %>%
+  filter(!is.na(rolling_avg)) %>%
+  select(date, rolling_avg, mask_mandate)
+cases_grouped
+```
+
+```{r glimpse to check}
+glimpse(cases_grouped)
+```
+
+### Exercise 8
+
+This is misleading grapgh reconstruct. This graph is misleading because it uses two different y-axis scales. The no-mask group is shifted upward and then labeled with a secondary axis. This makes the two lines look more directly comparable than they really are. A viewer might focus on the similar position of the lines instead of noticing that the mask counties had much higher case rates but declined over time.
+
+```{r misleading gragh}
+misleading_plot <- cases_grouped %>%
+  mutate(
+    plot_value = case_when(
+      mask_mandate == "No Mask" ~ rolling_avg + 11,
+      TRUE ~ rolling_avg
+    )
+  ) %>%
+  ggplot(aes(x = date, y = plot_value, color = mask_mandate)) +
+  geom_line(linewidth = 1.2) +
+  scale_y_continuous(
+    name = "Mask Mandate Counties: Cases per 100K",
+    limits = c(15, 25),
+    sec.axis = sec_axis(~ . - 11, name = "No-Mask Counties: Cases per 100K")
+  ) +
+  scale_color_manual(
+    values = c("Mask" = "orange", "No Mask" = "steelblue")
+  ) +
+  scale_x_date(date_labels = "%b %d") +
+  labs(
+    title = "Kansas COVID-19 7-Day Rolling Average",
+    subtitle = "Misleading graph using two different y-axis scales",
+    x = "Date",
+    color = "County group"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "bottom"
+  )
+misleading_plot 
+```
+
+### Exercise 9
+```{r a cleaerer visualization}
+# Plot both groups on the same y-axis
+cases_grouped %>%
+  ggplot(aes(x = date, y = rolling_avg, color = mask_mandate)) +
+  geom_line(linewidth = 1.2) +
+  scale_color_manual(values = c("Mask" = "orange", "No Mask" = "steelblue")) +
+  scale_x_date(date_labels = "%b %d") +
+  labs(
+    title = "Kansas COVID-19 Cases Declined in Mask-Mandate Counties",
+    subtitle = "7-day rolling average of daily cases per 100K population, July 12-August 3, 2020",
+    x = "Date",
+    y = "Daily cases per 100K population",
+    color = "County group"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "bottom"
+  )
+```
+
+
+### Exercise 10
+
+So, I think the clearer message in my visualization is that mask-mandate counties started with higher case rates but then experienced a noticeable decline over time. 
+
+No-mask counties stayed lower overall but were relatively flat during the same period. Using the same y-axis makes the comparison fairer and easier to interpret.
+
+
+### Exercise 11
+
+Just looking at the graph, it suggests that counties with mask mandates saw improvement over this time period, while no-mask counties did not show the same clear decline. 
+
+But I don't think the graph on its own proves that masks caused the decline. Counties with mandates may have been different in other ways, and counties may have adopted mandates because they already had higher case rates. The visualization is useful for seeing a pattern, but I don't think it should be interpreted as complete causal proof.
+
+## Part 6: Visualization as Rhetoric
+
+### Exercise 12
+
+The main components to the cleaerer and honest graph I made are using the same y-axis for both groups, using a line graph to show change over time, and labeling the groups clearly. I think these choices make the comparison more honest and reduce the chance that the viewer misreads the trend. My honest visualization shows that mask-mandate counties had higher case rates at the beginning of the period but declined a lot by early August. 
+
+### Exercise 13
+
+For the opposite message, I am thinking of making it look like mask-mandate counties had more COVID-19 cases and so make mask mandates look less effective? Planning to do this by  by using a stacked bar chart and focuse the attention on the larger total amount from mask counties rather than the trend over time. I think this makes it less honest because it shifts the viewer’s attention away from the decline in mask counties.
+
+### Exercise 14
+
+```{r}
+cases_grouped %>%
+  ggplot(aes(x = date, y = rolling_avg, fill = mask_mandate)) +
+  geom_col() +
+  scale_fill_manual(values = c("Mask" = "orange", "No Mask" = "steelblue")) +
+  scale_x_date(date_labels = "%b %d") +
+  labs(
+    title = "Mask-Mandate Counties Had More COVID-19 Cases",
+    subtitle = "Stacked bars emphasize total case burden instead of trend over time",
+    x = "Date",
+    y = "Stacked daily cases per 100K",
+    fill = "County group"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "bottom"
+  )
+```
+
+I think this stacked format makes mask counties look like a large part of the total case burden. It makes it harder to notice that cases in mask counties declined over time. This shows how visualization choices can shape the message a viewer receives from the same data.
+

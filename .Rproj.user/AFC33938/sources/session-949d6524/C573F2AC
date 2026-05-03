@@ -3,24 +3,24 @@
     "path": "~/GitHub/TAE_Lab-07/lab-07.Rmd",
     "project_path": "lab-07.Rmd",
     "type": "r_markdown",
-    "hash": "0",
+    "hash": "221783755",
     "contents": "",
-    "dirty": true,
+    "dirty": false,
     "created": 1777764587590.0,
     "source_on_save": false,
     "relative_order": 1,
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "136,0",
-        "scrollLine": "119"
+        "cursorPosition": "147,92",
+        "scrollLine": "138"
     },
     "folds": "",
-    "lastKnownWriteTime": 1777766116,
+    "lastKnownWriteTime": 1777772263,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1777766343731,
+    "last_content_update": 1777772263556,
     "read_only": false,
     "read_only_alternatives": []
 }
